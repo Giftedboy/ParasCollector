@@ -21,5 +21,5 @@ Burp Suite参数收集插件(Python)
 ```
 
 # 更新
-`2020/11/8`  --  UI 可视化
+`2020/11/8`  --  UI 可视化，具体可看这里-[传送门](https://www.cnblogs.com/wjrblogs/p/13764361.html)
 ![](https://img2020.cnblogs.com/blog/1893076/202011/1893076-20201108150352367-588426600.png)
