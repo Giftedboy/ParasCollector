@@ -20,9 +20,7 @@ from threading import Lock
 
 import os
 import json
-import re
-import io
-import re
+
 
 # 定义保存域名，参数，URL 的类
 class LogEntry:
