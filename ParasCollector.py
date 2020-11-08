@@ -143,16 +143,16 @@ class BurpExtender(IBurpExtender, IHttpListener, IHttpRequestResponse, ITab, IMe
             # paras = '\n'.join(paras)
             
             row = self._log.size()
-            print(host)
-            print(allparas.keys())
-            print(allparas)
+            # print(host)
+            # print(allparas.keys())
+            # print(allparas)
             # new = ''.join(allparas.keys())
             # if not new.find(host):
             # print(1)
             self._log.clear()
             for host in allparas.keys():
-                print(type(allparas.get(host)))
-                print(allparas.get(host))
+                # print(type(allparas.get(host)))
+                # print(allparas.get(host))
                 self._log.add(LogEntry(host, '\n'.join(allparas.get(host))))
                 self.fireTableRowsInserted(row, row)
             self._lock.release()
