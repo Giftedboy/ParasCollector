@@ -98,20 +98,15 @@ class BurpExtender(IBurpExtender, IHttpListener, IHttpRequestResponse, ITab, IMe
             try:
                 with open("allparas.json","r") as f:
                     allparas = json.loads(f.read())
-                    # print(type(allparas))
-                    # print(allparas)
             except Exception as ex:
                 allparas = {}
                 print("shit!!\n")
                 print("%s"%ex)
 
             host = messageInfo.getHttpService().getHost().encode('utf-8')
-            # print(type(host))
             paras = allparas.get(host)
-            # print(allparas)
             if paras == None:
                 paras = []
-            # print(type(paras))
             if messageIsRequest: # 如果是一个请求
                 request = messageInfo.getRequest() # 获得请求信息
                 analyzedRequest = self._helpers.analyzeRequest(request)
@@ -135,24 +130,13 @@ class BurpExtender(IBurpExtender, IHttpListener, IHttpRequestResponse, ITab, IMe
                 if paras !=[]:
                     paras.sort()
                     allparas[host] = paras
-            # print(type(allparas))
             if allparas != {}:
                 with open("allparas.json","w+") as f:
                     json.dump(allparas, f, ensure_ascii=False)
-            # paras.sort()
-            # paras = '\n'.join(paras)
             
             row = self._log.size()
-            # print(host)
-            # print(allparas.keys())
-            # print(allparas)
-            # new = ''.join(allparas.keys())
-            # if not new.find(host):
-            # print(1)
             self._log.clear()
             for host in allparas.keys():
-                # print(type(allparas.get(host)))
-                # print(allparas.get(host))
                 self._log.add(LogEntry(host, '\n'.join(allparas.get(host))))
                 self.fireTableRowsInserted(row, row)
             self._lock.release()
