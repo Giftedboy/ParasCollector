@@ -2,97 +2,179 @@
 #coding=utf8
 
 from burp import IBurpExtender
+from burp import ITab
 from burp import IHttpListener
+from burp import IMessageEditorController
 from burp import IHttpRequestResponse
-from burp import IResponseInfo
-from burp import IProxyListener
-#从burp中导入这几个api模块
+from java.awt import Component;
+from java.io import PrintWriter;
+from java.util import ArrayList;
+from java.util import List;
+from javax.swing import JScrollPane;
+from javax.swing import JSplitPane;
+from javax.swing import JTabbedPane;
+from javax.swing import JTable;
+from javax.swing import SwingUtilities;
+from javax.swing.table import AbstractTableModel;
+from threading import Lock
+
 import os
-import re
 import json
+import re
+import io
+import re
 
-print("""
-  _____                     _____      _ _           _             
- |  __ \                   / ____|    | | |         | |            
- | |__) __ _ _ __ __ _ ___| |     ___ | | | ___  ___| |_ ___  _ __ 
- |  ___/ _` | '__/ _` / __| |    / _ \| | |/ _ \/ __| __/ _ \| '__|
- | |  | (_| | | | (_| \__ | |___| (_) | | |  __| (__| || (_) | |   
- |_|   \__,_|_|  \__,_|___/\_____\___/|_|_|\___|\___|\__\___/|_|   
+# 定义保存域名，参数，URL 的类
+class LogEntry:
+    def __init__(self, host, paras):
+        self._host = host
+        self._count = len(paras)
+        self._paras = paras
 
- ----- Contact me to improve it.A good idea is also important -----
- _________________________ QQ:2309896932 __________________________
- *************** https://www.cnblogs.com/wjrblogs/ ****************
-""")
-print "Files will be saved at " + os.getcwd()
-
-def ReadFile(file):
-    with open(file,"a+") as f:
-        f.seek(0)
-        paras = f.read().split("\n")
-        return paras
-
-
-def WriteToFile(file, paras):
-    for para in paras:
-          while '' in paras:
-            paras.remove('')
-    if paras == []:
-        os.remove(file) # 因为之前创建了一个文件，没有参数时便删除
-    else:
-        paras.sort()
-        with open(file,"w") as f:
-            for para in paras:
-                f.write(para+"\n")
+class Table(JTable):
+    def __init__(self, extender):
+        self._extender = extender
+        self.setModel(extender)
+    
+    def changeSelection(self, row, col, toggle, extend):
+    
+        # show the log entry for the selected row
+        logEntry = self._extender._log.get(row)
+        self._extender._parasViewer.setText(logEntry._paras)
+        # self._extender._currentlyDisplayedItem = logEntry._requestResponse
+        
+        JTable.changeSelection(self, row, col, toggle, extend)
+    
 
 
-class BurpExtender(IBurpExtender, IHttpListener, IHttpRequestResponse, IProxyListener):
-    '''
-    定义一个类，这个类继承了IBurpExtender 使其成为一个插件模块
-    继承IHttpListener， 使其可以接受流经的request和response
-    继承IHttpRequestResponse，使其可以获得HTTP的详细信息
-    继承IProxyListener ，注册成一个代理服务器！
-    '''
-
+class BurpExtender(IBurpExtender, IHttpListener, IHttpRequestResponse, ITab, IMessageEditorController, AbstractTableModel):
     def registerExtenderCallbacks(self,callbacks):
-
         self._callbacks = callbacks
         self._helpers = callbacks.getHelpers()
-        self._callbacks.setExtensionName('ParasCollector') # 设定插件名字
+        self._callbacks.setExtensionName('ParasCollector')
+        self._log = ArrayList()
+        self._lock = Lock()
 
-        callbacks.registerHttpListener(self)  # 必须得注册才具有功能
-        callbacks.registerProxyListener(self)
+        # 主窗口
+        self._splitpane = JSplitPane(JSplitPane.VERTICAL_SPLIT)
+
+        logTable = Table(self)
+        scrollPane = JScrollPane(logTable)
+        self._splitpane.setLeftComponent(scrollPane)
+
+        # 详情
+        tabs = JTabbedPane()
+        self._parasViewer = callbacks.createTextEditor()
+        tabs.addTab("Paras",self._parasViewer.getComponent())
+        self._splitpane.setRightComponent(tabs)
+
+        # 定义 UI 组件
+        callbacks.customizeUiComponent(self._splitpane)
+        callbacks.customizeUiComponent(logTable)
+        callbacks.customizeUiComponent(scrollPane)
+        callbacks.customizeUiComponent(tabs)
+
+        # 将 UI 组件添加到 BURP 的 UI
+        callbacks.addSuiteTab(self)
+
+
+        # 注册功能
+        callbacks.registerHttpListener(self)
+
+        return
+
+
+    def getTabCaption(self):
+        return "ParasCollector"
+    
+    def getUiComponent(self):
+        return self._splitpane
+        
 
     def processHttpMessage(self, toolFlag, messageIsRequest, messageInfo):
-        if toolFlag == 4 or toolFlag == 64:  # flag值代表着不同的组队，此时是 proxy 和 repeater，表示被拦截的消息
+        if toolFlag == 4:
+            # 读 json 文件取得数据
+            self._lock.acquire() # 加锁，反应会慢一点
+            try:
+                with open("allparas.json","r") as f:
+                    allparas = json.loads(f.read())
+                    # print(type(allparas))
+                    # print(allparas)
+            except Exception as ex:
+                allparas = {}
+                print("shit!!\n")
+                print("%s"%ex)
+
+            host = messageInfo.getHttpService().getHost().encode('utf-8')
+            # print(type(host))
+            paras = allparas.get(host)
+            # print(allparas)
+            if paras == None:
+                paras = []
+            # print(type(paras))
             if messageIsRequest: # 如果是一个请求
                 request = messageInfo.getRequest() # 获得请求信息
-                analyzedRequest = self._helpers.analyzeRequest(request) # 解析
-                host = messageInfo.getHttpService().getHost() # 获取域名
-                file = host+".txt"
-                lines = ReadFile(file)
-                paras1 = analyzedRequest.getParameters() # 获取参数，包括 json 格式的数据
+                analyzedRequest = self._helpers.analyzeRequest(request)
+                paras1 = analyzedRequest.getParameters()
                 for para in paras1:
-                    if para.getType() == para.PARAM_COOKIE:
-                        temp = str(para.getName())
-                        if temp not in lines: # 去重
-                            lines.append(temp)
-                    else:
-                        temp = para.getName()
-                        if temp not in lines:
-                            lines.append(temp)
-                WriteToFile(file,lines)
+                    temp = str(para.getName())
+                    if temp not in paras: # 去重
+                            paras.append(temp)
+                if paras !=[]:
+                    paras.sort()
+                    allparas[host] = paras
             if not messageIsRequest: # 如果是个响应
-                host = messageInfo.getHttpService().getHost() # 获取域名
-                file = host+".txt"
-                lines = ReadFile(file)
                 response = messageInfo.getResponse() # 获得响应信息
-                analyzedResponse = self._helpers.analyzeResponse(response) # 解析
-                # print analyzedResponse.getStatedMimeType()
+                analyzedResponse = self._helpers.analyzeResponse(response)
                 if analyzedResponse.getInferredMimeType() == "JSON":
                     body = response[analyzedResponse.getBodyOffset():].tostring() # 获取返回包
                     paras2 = json.loads(body).keys()
                     for para in paras2:
-                        if para not in lines: # 去重
-                            print str(para)
-                            lines.append(str(para))
-                WriteToFile(file,lines)
+                        if para not in paras: # 去重
+                            paras.append(str(para))
+                if paras !=[]:
+                    paras.sort()
+                    allparas[host] = paras
+            # print(type(allparas))
+            if allparas != {}:
+                with open("allparas.json","w+") as f:
+                    json.dump(allparas, f, ensure_ascii=False)
+            # paras.sort()
+            # paras = '\n'.join(paras)
+            
+            row = self._log.size()
+            print(host)
+            print(allparas.keys())
+            print(allparas)
+            # new = ''.join(allparas.keys())
+            # if not new.find(host):
+            # print(1)
+            self._log.clear()
+            for host in allparas.keys():
+                print(type(allparas.get(host)))
+                print(allparas.get(host))
+                self._log.add(LogEntry(host, '\n'.join(allparas.get(host))))
+                self.fireTableRowsInserted(row, row)
+            self._lock.release()
+
+
+
+    def getRowCount(self):
+        try:
+            return self._log.size()
+        except:
+            return 0
+
+    def getColumnCount(self):
+        return 1
+
+    def getColumnName(self, columnIndex):
+        if columnIndex == 0:
+            return "HOST"
+        return ""
+
+    def getValueAt(self, rowIndex, columnIndex):
+        logEntry = self._log.get(rowIndex)
+        if columnIndex == 0:
+            return logEntry._host
+        return ""
