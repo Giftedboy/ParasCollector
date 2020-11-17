@@ -21,6 +21,19 @@ from threading import Lock
 import os
 import json
 
+print("""
+  _____                     _____      _ _           _             
+ |  __ \                   / ____|    | | |         | |            
+ | |__) __ _ _ __ __ _ ___| |     ___ | | | ___  ___| |_ ___  _ __ 
+ |  ___/ _` | '__/ _` / __| |    / _ \| | |/ _ \/ __| __/ _ \| '__|
+ | |  | (_| | | | (_| \__ | |___| (_) | | |  __| (__| || (_) | |   
+ |_|   \__,_|_|  \__,_|___/\_____\___/|_|_|\___|\___|\__\___/|_|   
+
+ ----- Contact me to improve it.A good idea is also important -----
+ _________________________ QQ:2309896932 __________________________
+ *************** https://www.cnblogs.com/wjrblogs/ ****************
+""")
+print "Files will be saved at " + os.getcwd()
 
 # 定义保存域名，参数，URL 的类
 class LogEntry:
