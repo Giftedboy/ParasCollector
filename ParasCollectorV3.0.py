@@ -119,7 +119,7 @@ class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener):
 				continue
 
 		# 处理响应
-		print(host)
+		#print(host)
 		response = historyReqRep.getResponse()
 		if response != None:
 			analyzedResponse = self._helpers.analyzeResponse(response)
