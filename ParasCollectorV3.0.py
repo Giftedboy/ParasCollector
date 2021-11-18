@@ -24,7 +24,7 @@ print("""
  _________________________ QQ:2309896932 __________________________
  *************** https://www.cnblogs.com/wjrblogs/ ****************
 """)
-print "Files will be saved at " + os.getcwd() + "/allparas.json"
+
 
 
 class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener):
@@ -78,10 +78,9 @@ class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener):
 		self._threadLock.release()
 		#print(2222222222)
 		#print(json.dumps(self._allParas))
-		print "Files will be saved at " + os.getcwd()
 		with open("allparas.json","w+") as f:
 			json.dump(self._allParas, f, ensure_ascii=False)
-		print("done")
+			print "Files will be saved at " + os.getcwd() + "/allparas.json"
 		
 	def analyzeReqRep(self,historyReqRep):
 		# 获取域名
@@ -96,54 +95,61 @@ class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener):
 		
 		url = analyzedRequest.getUrl() # 获取java.net.URL对象
 		path = str(url.getPath())
-		paras1 = analyzedRequest.getParameters()
-		# print(len(paras1))
-		keyValues = parasInfo.get(path)
+		if not path.endswith(".js") or not path.endswith(".png") or not path.endswith(".jpeg") or not path.endswith(".jpg") or not path.endswith(".css"):
+			# print(path)
+			paras1 = analyzedRequest.getParameters()
+			# print(len(paras1))
+			keyValues = parasInfo.get(path)
 
-		if keyValues == None:
-			keyValues = {}
-		for para in paras1:
-			try:
-				key = str(para.getName())
-				keyval = str(para.getValue())
-				#print(key+"==="+keyval)
+			if keyValues == None:
+				keyValues = {}
+			for para in paras1:
+				try:
+					key = str(para.getName())
+					keyval = str(para.getValue())
+					#print(key+"==="+keyval)
 
-				Values = keyValues.get(key)
+					Values = keyValues.get(key)
 
-				if Values == None:
-					Values = []
-				if keyval not in Values:
-					Values.append(keyval)
-				keyValues[key] = Values
-			except:
-				continue
-
-		# 处理响应
-		#print(host)
-		response = historyReqRep.getResponse()
-		if response != None:
-			analyzedResponse = self._helpers.analyzeResponse(response)
-			if analyzedResponse.getInferredMimeType() == "JSON":
-				body = response[analyzedResponse.getBodyOffset():].tostring() # 获取返回包
-				jsonDict = json.loads(body).items() # 字典类型
-				for key,keyval in jsonDict:
-					#print(key)
-					new_key = "Rep_" + key
-					Values = keyValues.get(new_key)
-					keyval = str(keyval)
 					if Values == None:
 						Values = []
 					if keyval not in Values:
 						Values.append(keyval)
+					keyValues[key] = Values
+				except:
+					continue
 
-					keyValues[new_key] = Values
-					#print(Values)
-		parasInfo[path] = keyValues
-		self._allParas[host] = parasInfo
+			# 处理响应
+			
+			response = historyReqRep.getResponse()
+			if response != None:
+				analyzedResponse = self._helpers.analyzeResponse(response)
+				# print(host)
+				if analyzedResponse.getInferredMimeType() == "JSON":
+					body = response[analyzedResponse.getBodyOffset():].tostring() # 获取返回包
+					jsonDict = json.loads(body).items() # 字典类型
+					for key,keyval in jsonDict:
+						#print(key)
+						new_key = "Rep_" + key
+						Values = keyValues.get(new_key)
+						if isinstance(keyval,unicode):
+							keyval = keyval.encode('utf-8')
+						else:
+							keyval = str(keyval)
+						#print(type(keyval))
+						if Values == None:
+							Values = []
+						if keyval not in Values:
+							Values.append(keyval)
+
+						keyValues[new_key] = Values
+						#print(Values)
+			parasInfo[path] = keyValues
+			self._allParas[host] = parasInfo
 
 		
 	def extensionUnloaded(self):
-		# print(11111)
+		print(11111)
 		allHistory = self._callbacks.getProxyHistory()
 		self._end = len(allHistory)
 		end_t = Thread(target=self.getParas, args=(self._end,allHistory))
