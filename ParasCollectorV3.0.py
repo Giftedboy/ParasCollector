@@ -127,7 +127,7 @@ class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener):
 				body = response[analyzedResponse.getBodyOffset():].tostring() # 获取返回包
 				jsonDict = json.loads(body).items() # 字典类型
 				for key,keyval in jsonDict:
-					print(key)
+					#print(key)
 					new_key = "Rep_" + key
 					Values = keyValues.get(new_key)
 					keyval = str(keyval)
@@ -137,7 +137,7 @@ class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener):
 						Values.append(keyval)
 
 					keyValues[new_key] = Values
-					print(Values)
+					#print(Values)
 		parasInfo[path] = keyValues
 		self._allParas[host] = parasInfo
 
