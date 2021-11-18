@@ -1,6 +1,16 @@
 # ParasCollector
 Burp Suite参数收集插件(Python)
 
+# 更新
+`2020/11/8` V2.0 --  UI 可视化，具体可看这里-[传送门](https://www.cnblogs.com/wjrblogs/p/13764361.html)
+![](https://img2020.cnblogs.com/blog/1893076/202011/1893076-20201108150352367-588426600.png)
+
+`2021/11/18`  V3.0
+* 引入线程，减少请求响应耗时
+* 保存到文件
+* UI 等会开发
+
+
 # 操作
 直接导入即可用
 
@@ -20,11 +30,4 @@ Burp Suite参数收集插件(Python)
  *************** https://www.cnblogs.com/wjrblogs/ ****************
 ```
 
-# 更新
-`2020/11/8` V2.0 --  UI 可视化，具体可看这里-[传送门](https://www.cnblogs.com/wjrblogs/p/13764361.html)
-![](https://img2020.cnblogs.com/blog/1893076/202011/1893076-20201108150352367-588426600.png)
 
-`2021/11/18`  V3.0
-* 引入线程，减少请求响应耗时
-* 保存到文件
-* UI 等会开发
