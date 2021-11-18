@@ -24,7 +24,7 @@ print("""
  _________________________ QQ:2309896932 __________________________
  *************** https://www.cnblogs.com/wjrblogs/ ****************
 """)
-print "Files will be saved at " + os.getcwd() + "allparas.json"
+print "Files will be saved at " + os.getcwd() + "/allparas.json"
 
 
 class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener):
@@ -65,14 +65,15 @@ class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener):
 		# 会在线程中被改变的数需要在锁里面获取跟改变，如果以形参方式传入会导致数据错乱，不会改变的数据应当以形参传入，避免数据错乱
 		self._threadLock.acquire()
 		#i=0
-		print(self._index)
-		print(end)
+		#print(self._index)
+		#print(end)
 		for historyReqRep in allHistory[self._index:]:
 			# print("循环处理所有历史请求")
 			self.analyzeReqRep(historyReqRep)
 			# i = i+1
 			# if i==10:
 			# 	break
+		# 让起始位置变为最后一个请求的位置
 		self._index = end
 		self._threadLock.release()
 		#print(2222222222)
@@ -80,7 +81,7 @@ class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener):
 		print "Files will be saved at " + os.getcwd()
 		with open("allparas.json","w+") as f:
 			json.dump(self._allParas, f, ensure_ascii=False)
-		# 让起始位置变为最后一个请求的位置
+		print("done")
 		
 	def analyzeReqRep(self,historyReqRep):
 		# 获取域名
@@ -92,6 +93,7 @@ class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener):
 			parasInfo = {}
 		# 处理请求
 		analyzedRequest = self._helpers.analyzeRequest(historyReqRep)
+		
 		url = analyzedRequest.getUrl() # 获取java.net.URL对象
 		path = str(url.getPath())
 		paras1 = analyzedRequest.getParameters()
@@ -115,12 +117,30 @@ class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener):
 				keyValues[key] = Values
 			except:
 				continue
+
+		# 处理响应
+		print(host)
+		response = historyReqRep.getResponse()
+		if response != None:
+			analyzedResponse = self._helpers.analyzeResponse(response)
+			if analyzedResponse.getInferredMimeType() == "JSON":
+				body = response[analyzedResponse.getBodyOffset():].tostring() # 获取返回包
+				jsonDict = json.loads(body).items() # 字典类型
+				for key,keyval in jsonDict:
+					print(key)
+					new_key = "Rep_" + key
+					Values = keyValues.get(new_key)
+					keyval = str(keyval)
+					if Values == None:
+						Values = []
+					if keyval not in Values:
+						Values.append(keyval)
+
+					keyValues[new_key] = Values
+					print(Values)
 		parasInfo[path] = keyValues
 		self._allParas[host] = parasInfo
-		# print(self._allParas[host])
-		#print()
-		# 处理响应
-		#analyzedResponse = self._helpers.analyzeResponse(historyReqRep)
+
 		
 	def extensionUnloaded(self):
 		# print(11111)
