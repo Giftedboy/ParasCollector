@@ -2,15 +2,15 @@
 from threading import Thread
 from threading import Lock
 from urlparse import urlparse
-import time
-import java.net.URL
 from burp import IBurpExtender
 from burp import IProxyListener
 from burp import IExtensionStateListener
+from burp import IContextMenuFactory
+from burp import IBurpExtenderCallbacks
 import json
 import os
 
-
+from javax.swing import JMenuItem
 #from burp import IHttpRequestResponse
 print("""
   _____                     _____      _ _           _             
@@ -27,7 +27,7 @@ print("""
 
 
 
-class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener):
+class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener,IContextMenuFactory):
     def registerExtenderCallbacks(self,callbacks):
         self._callbacks = callbacks
         self._helpers = callbacks.getHelpers()
@@ -42,6 +42,7 @@ class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener):
         self._pathblacklist = ["/monitor_browser/collect/batch/",""] # 设置域名path黑名单，在该path下的将不收集，比方说心跳包，日志包，避免文件过大，脏数据问题
         callbacks.registerProxyListener(self)
         callbacks.registerExtensionStateListener(self)
+        callbacks.registerContextMenuFactory(self)
 
         # 在启用插件的时候就扫描一次
         allHistory = self._callbacks.getProxyHistory()
@@ -126,6 +127,35 @@ class BurpExtender(IBurpExtender, IProxyListener, IExtensionStateListener):
         end = len(allHistory)
         end_t = Thread(target=self.getParas, args=(end,allHistory))
         end_t.start()
+
+    def createMenuItems(self, invocation):
+        if invocation.getToolFlag() == IBurpExtenderCallbacks.TOOL_REPEATER or IBurpExtenderCallbacks.TOOL_PROXY:
+            menu = []
+            menu.append(JMenuItem("getParas", None, actionPerformed=lambda x, y=invocation: self.printParas(x, y)))
+
+        return menu
+
+    def printParas(self,event,invocation):
+        reqreps = invocation.getSelectedMessages()
+        for reqrep in reqreps:
+            analyzedRequest = self._helpers.analyzeRequest(reqrep)
+
+            url = analyzedRequest.getUrl()
+            host = str(url.getHost())
+            path = str(url.getPath())
+            print(host+path+"\n")
+            hostparas = self._allParas.get(host)
+            if hostparas != None:
+                pathparas = hostparas.get(path)
+                if pathparas != None:
+                    try:
+                        print(json.dumps(pathparas,sort_keys=True,indent=4,ensure_ascii=False))
+                    except BaseException,err:
+                        print(err)
+                else:
+                    print("path_noParas")
+            else:
+                print("host_noParas")
 
     def parseJson(self,json):
         keyvals = json.items()
