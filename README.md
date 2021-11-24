@@ -1,5 +1,6 @@
 # ParasCollector
 Burp Suite参数收集插件(Python)
+
 用于收集**请求/响应**中出现的参数，包括 json 数据的参数
 ```
 
