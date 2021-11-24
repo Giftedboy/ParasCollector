@@ -15,6 +15,9 @@ Burp Suite参数收集插件(Python)
 ![image](https://user-images.githubusercontent.com/25588005/143251175-e99420df-d099-4240-afd5-8a9f36589869.png)
 只能这样了，跑路ing
 
+# 可能存在的BUG
+* 中文参数名，未做特殊处理
+
 # 操作
 直接导入即可用
 
