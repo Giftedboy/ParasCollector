@@ -31,6 +31,9 @@ Burp Suite参数收集插件(Python)
 * 建议通过用浏览器打开生成的文件，配合json格式化插件使用
 ![image](https://user-images.githubusercontent.com/25588005/143251175-e99420df-d099-4240-afd5-8a9f36589869.png)
 只能这样了，跑路ing
+最后成这样了：当某个域名参数过多时会很卡，所以建议添加域名/接口的黑名单
+![image](https://user-images.githubusercontent.com/25588005/143874066-802eab5e-7df8-49f5-9c9a-d82fbac9baad.png)
+
 
 # 可能存在的BUG
 * 中文参数名，未做特殊处理，想来应该不会有这么变态的开发
