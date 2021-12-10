@@ -20,7 +20,7 @@ from javax.swing import JTabbedPane;
 from javax.swing import JTable;
 from javax.swing.table import AbstractTableModel;
 #from burp import IHttpRequestResponse
-sys.version[0] == '2':
+if sys.version[0] == '2':
     reload(sys)
     sys.setdefaultencoding("utf-8")# 老是会出现编码错误，所以设置一下编码
 print("""
